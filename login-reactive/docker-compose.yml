@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # --- SERVICIO 1: Base de Datos Relacional ---
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres_reactive_db
+    environment:
+      POSTGRES_USER: user_reactive
+      POSTGRES_PASSWORD: password_secure
+      POSTGRES_DB: login_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - reactive-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user_reactive -d login_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- SERVICIO 2: Microservicio Spring Boot WebFlux ---
+  app-login:
+    build: .
+    container_name: spring_login_app
+    ports:
+      - "8080:8080"
+    environment:
+      # Configuramos la URL usando el protocolo r2dbc y el nombre del servicio de la BD
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres-db:5432/login_db
+      SPRING_R2DBC_USERNAME: user_reactive
+      SPRING_R2DBC_PASSWORD: password_secure
+    networks:
+      - reactive-network
+    # Truco Pro: La app no arranca hasta que la BD esté totalmente lista para recibir conexiones
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    # Mantiene los datos a salvo en tu Mac aunque apagues el contenedor
+
+networks:
+  reactive-network: # Red virtual para que la app y la BD se hablen usando sus nombres de servicio
