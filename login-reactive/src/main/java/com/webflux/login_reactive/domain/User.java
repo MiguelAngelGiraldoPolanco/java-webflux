@@ -18,10 +18,14 @@ public class User {
     private Long id;
     private String email;
     private String name;
-    private String password_hash;
+    @Column("password_hash")
+    private String passwordHash;
     @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
     @LastModifiedDate
+    Column("updated_at")
     private LocalDateTime updatedAt;
-    private Boolean isAdmin;
+    @Column("is_admin")
+    private Boolean isAdmin = false;
 }
